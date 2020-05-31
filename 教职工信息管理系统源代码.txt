@@ -1,0 +1,594 @@
+#include <iostream>
+#include <fstream>
+#define FILENAME "D:\\WorkerManager.txt"
+
+using namespace std;
+
+//日期类
+class date
+{
+public:
+	date();
+	date(int y, int m, int d);
+	int y, m, d;
+
+};
+date::date() :y(0), m(0), d(0)
+{}
+
+date::date(int y, int m, int d) : y(y), m(m), d(d)
+{}
+
+//人员类
+class person
+{
+public:
+	person();
+	person(string name, char sex, string identification, int y, int m, int d);
+protected:
+	string m_name;	//姓名
+	char m_sex;	//性别
+	string	m_identification;	//身份证号码
+	date m_da;	//出生日期
+};
+person::person()
+{}
+
+person::person(string name, char sex, string identification, int y, int m, int d) :m_name(name), m_sex(sex), m_identification(identification), m_da(y, m, d)
+{}
+
+//职工类
+class Employee :public person
+{
+public:
+	Employee();
+	Employee(string name, char sex, string identification, int y, int m, int d, string id, string num, string Department, string job_title);
+	friend istream& operator>>(istream& is, Employee& Emp);
+	friend class WorkerManager;
+	string m_id;	//工号
+	string m_num;	//电话号码
+	string Department;	//所在部系
+	string job_title;	//职称
+};
+Employee::Employee()
+{
+
+}
+
+Employee::Employee(string name, char sex, string identification, int y, int m, int d, string id, string num, string Department, string job_title) :person(name, sex, identification, y, m, d), m_id(id), m_num(num), Department(Department), job_title(job_title)
+{
+
+}
+
+istream& operator>>(istream& is, Employee& Emp)
+{
+	cout << "请输入姓名：" << endl;
+	is >> Emp.m_name;
+	cout << "请输入性别(m or w)：" << endl;
+	is >> Emp.m_sex;
+	cout << "请输入身份证号：" << endl;
+	is >> Emp.m_identification;
+	cout << "请输入出生年份：" << endl;
+	is >> Emp.m_da.y;
+	cout << "请输入出生月份：" << endl;
+	is >> Emp.m_da.m;
+	cout << "请输入出生日期：" << endl;
+	is >> Emp.m_da.d;
+	cout << "请输入工号：" << endl;
+	is >> Emp.m_id;
+	cout << "请输入电话号码：" << endl;
+	is >> Emp.m_num;
+	cout << "请输入所在部系：" << endl;
+	is >> Emp.Department;
+	cout << "请输入职称(助教1 讲师2 副教授3 教授4)：" << endl;
+	is >> Emp.job_title;
+
+	return is;
+}
+
+//管理者类
+class WorkerManager
+{
+public:
+	//构造函数
+	WorkerManager();
+
+	//展示菜单
+	void show_Menu();
+
+	//增加职工
+	void add();
+
+	//写入文件
+	void save();
+
+	//显示单个职工信息
+	void show_one(int index);
+
+	//显示职工
+	void show_Emp();
+
+	//判断职工是否存在
+	int is_Exist(int i, string message);
+
+	//查询职工
+	void find();
+
+	//统计职工人数
+	void statistics();
+
+	//排序职工
+	void sort_Emp();
+
+	//修改职工
+	void change_Emp();
+
+	//删除职工
+	void delete_Emp();
+
+	//职工数组
+	Employee* m_EmpArray;
+
+	//职工人数
+	int m_EmpNum;
+
+	//标志文件是否为空
+	bool m_FileEmpty;
+};
+
+//构造函数
+WorkerManager::WorkerManager()
+{
+	ifstream infile;
+	infile.open(FILENAME, ios::in);
+
+	//1.文件不存在
+	if (!infile.is_open())
+	{
+		this->m_EmpNum = 0;	//初始化人数
+		this->m_EmpArray = NULL;	//初始化数组
+		this->m_FileEmpty = true;	//文件标志为true
+		infile.close();	///关闭文件
+		return;
+	}
+
+	//2.文件为空，并且没有记录
+	char ch;	//默认空文件有一个eof结尾符
+	infile >> ch;
+	if (infile.eof())
+	{
+		this->m_EmpNum = 0;	//初始化人数
+		this->m_EmpArray = NULL;	//初始化数组
+		this->m_FileEmpty = true;	//文件标志为true
+		infile.close();	//关闭文件
+		return;
+	}
+	//3.文件存在且保存职工信息
+	int num_ = 0;	//人数
+		//3.1获取人数
+	string name; char sex; string identification; int y; int m; int d; string id; string num; string Department; string job_title;
+	while (infile>>name>>sex>>identification>> y >> m >> d >> id >> num >> Department >> job_title)
+	{
+		num_++;
+	}
+	this->m_EmpNum = num_;
+	infile.close();
+
+		//3.2初始化数组
+	ifstream in;
+	in.open(FILENAME, ios::in);
+
+	this->m_EmpArray = new Employee[this->m_EmpNum];	//开辟内存
+	for (int i = 0; i < this->m_EmpNum; i++)
+	{
+		in >> this->m_EmpArray[i].m_name >> m_EmpArray[i].m_sex >> m_EmpArray[i].m_identification >> m_EmpArray[i].m_da.y >> m_EmpArray[i].m_da.m >> m_EmpArray[i].m_da.d >> m_EmpArray[i].m_id >> m_EmpArray[i].m_num >> m_EmpArray[i].Department >> m_EmpArray[i].job_title;
+	}
+	this->m_FileEmpty = false;
+
+
+	in.close();
+}
+
+//展示菜单
+void WorkerManager::show_Menu()
+{
+	cout << "********************************************" << endl;
+	cout << "*********  欢迎使用职工管理系统！ **********" << endl;
+	cout << "*************  0.退出管理程序  *************" << endl;
+	cout << "*************  1.增加职工信息  *************" << endl;
+	cout << "*************  2.查找职工信息  *************" << endl;
+	cout << "*************  3.统计职工信息  *************" << endl;
+	cout << "*************  4.职称信息排序  *************" << endl;
+	cout << "*************  5.修改职工信息  *************" << endl;
+	cout << "*************  6.删除职工信息  *************" << endl;
+
+	cout << endl;
+}
+
+//增加职工
+void WorkerManager::add()
+{
+	int addNum = 0;
+	cout << "请输入增加人数：";
+	cin >> addNum;
+
+	if (addNum > 0)
+	{
+		//计算新空间大小
+		int newSize = addNum + this->m_EmpNum;
+
+		//开辟新空间
+		Employee* newSpace = new Employee[newSize];
+
+		//将原有空间内容放入新空间
+		if (this->m_EmpArray != NULL)
+		{
+			for (int i = 0; i < this->m_EmpNum; i++)
+			{
+				newSpace[i] = this->m_EmpArray[i];
+			}
+		}
+
+		for (int i = this->m_EmpNum; i < newSize; i++)
+		{
+			int j = 1;
+			cout << "请输入第" << j++ << "名职工的信息" << endl;
+			cin >> newSpace[i];
+			cout << "\n\n\n";
+		}
+		this->m_EmpArray = NULL;
+		this->m_EmpArray = newSpace;
+		this->m_EmpNum = newSize;
+		save();
+		cout << "添加成功!" << endl;
+		this->m_FileEmpty = false;
+
+	}
+	else
+	{
+		cout << "输入有误!" << endl;
+	}
+	system("pause");
+	system("cls");
+}
+
+//写入文件
+void WorkerManager::save()
+{
+	ofstream outfile;
+	outfile.open(FILENAME, ios::out);
+
+	for (int i = 0; i < this->m_EmpNum; i++)
+	{
+		outfile << this->m_EmpArray[i].m_name << " "
+			<< this->m_EmpArray[i].m_sex << " "
+			<< this->m_EmpArray[i].m_identification << " "
+			<< this->m_EmpArray[i].m_da.y << " "
+			<< this->m_EmpArray[i].m_da.m << " "
+			<< this->m_EmpArray[i].m_da.d << " "
+			<< this->m_EmpArray[i].m_id << " "
+			<< this->m_EmpArray[i].m_num << " "
+			<< this->m_EmpArray[i].Department << " "
+			<< this->m_EmpArray[i].job_title << endl;
+
+	}
+	outfile.close();
+}
+
+//显示单个职工信息
+void WorkerManager::show_one(int index)
+{
+	cout << "姓名：" << this->m_EmpArray[index].m_name << endl;
+	cout << "性别：" << this->m_EmpArray[index].m_sex << endl;
+	cout << "身份证号：" << this->m_EmpArray[index].m_identification << endl;
+	cout << "出生日期：" << this->m_EmpArray[index].m_da.y << "." << m_EmpArray[index].m_da.m << "." << m_EmpArray[index].m_da.d << endl;
+	cout << "工号：" << this->m_EmpArray[index].m_id << endl;
+	cout << "电话号码：" << this->m_EmpArray[index].m_num << endl;
+	cout << "所在部系：" << this->m_EmpArray[index].Department << endl;
+	cout << "职称：" << this->m_EmpArray[index].job_title << endl;
+}
+
+//显示职工
+void WorkerManager::show_Emp()
+{
+	if (this->m_FileEmpty)
+	{
+		cout << "文件不存在或记录为空" << endl;
+	}
+	else
+	{
+		if (this->m_EmpNum == 0)
+		{
+			cout << "文件不存在或记录为空" << endl;
+		}
+		for (int i = 0; i < this->m_EmpNum; i++)
+		{
+			this->show_one(i);
+			cout << "\n\n\n";
+		}
+	}
+	system("pause");
+	system("cls");
+}
+
+//判断职工是否存在
+int WorkerManager::is_Exist(int choose, string message)
+{
+	//左参数为查询方式，右参数为信息
+	//若存在则返回该职工在数组的下标，不存在则返回-1
+	int index = -1;
+	for (int i = 0; i < this->m_EmpNum; i++)
+	{
+		if (choose == 1)	//工号查询
+		{
+			if (message == this->m_EmpArray[i].m_id)
+			{
+				index = i;
+				break;
+			}
+		}
+		if (choose == 2)	//姓名查询
+		{
+			if (message == this->m_EmpArray[i].m_name)
+			{
+				index = i;
+				break;
+			}
+		}
+		if (choose == 3)	//科室查询
+		{
+			if (message == this->m_EmpArray[i].Department)
+			{
+				index = i;
+				break;
+			}
+		}
+	}
+	return index;
+
+}
+
+//查询职工
+void WorkerManager::find()
+{
+	int choose;
+	cout << "1.按工号查询" << endl;
+	cout << "2.按姓名查询" << endl;
+	cout << "3.按科室查询" << endl;
+	cin >> choose;
+	string id, name, Department;
+	switch (choose)
+	{
+	case 1:
+		cout << "请输入工号：";
+		cin >> id;
+		if (is_Exist(choose, id) == -1)
+		{
+			cout << "该职工不存在" << endl;
+		}
+		else
+		{
+			show_one(is_Exist(choose, id));
+		}
+		break;
+	case 2:
+		cout << "请输入姓名：";
+		cin >> name;
+		if (is_Exist(choose, name) == -1)
+		{
+			cout << "该职工不存在" << endl;
+		}
+		else
+		{
+			show_one(is_Exist(choose, name));
+		}
+		break;
+	case 3:
+		cout << "请输入科室：";
+		cin >> Department;
+		if (is_Exist(choose, Department) == -1)
+		{
+			cout << "该职工不存在" << endl;
+		}
+		else
+		{
+			show_one(is_Exist(choose, Department));
+		}
+		break;
+	default:
+		cout << "输入错误" << endl;
+		break;
+	}
+	system("pause");
+	system("cls");
+}
+
+//统计职工人数
+void WorkerManager::statistics()
+{
+	string stat_name;
+	cout << "请输入部系名称：";
+	cin >> stat_name;
+	int num1 = 0, num2 = 0, num3 = 0, num4 = 0;
+	for (int i = 0; i < this->m_EmpNum; i++)
+	{
+		if (this->m_EmpArray[i].Department == stat_name)
+		{
+			if (m_EmpArray[i].job_title == "1")
+			{
+				++num1;
+			}
+			if (m_EmpArray[i].job_title == "2")
+			{
+				++num2;
+			}
+			if (m_EmpArray[i].job_title == "3")
+			{
+				++num3;
+			}
+			if (m_EmpArray[i].job_title == "4")
+			{
+				++num4;
+			}
+		}
+	}
+	cout << "助教人数:" << num1 << endl;
+	cout << "讲师人数:" << num2 << endl;
+	cout << "副教授人数:" << num3 << endl;
+	cout << "教授人数:" << num4 << endl;
+	system("pause");
+	system("cls");
+}
+
+//排序职工
+void WorkerManager::sort_Emp()
+{
+	if (this->m_FileEmpty)
+	{
+		cout << "文件不存在或记录为空" << endl;
+	}
+	else
+	{
+		for (int i = 0; i < this->m_EmpNum; i++)
+		{
+			for (int j = 0; j < this->m_EmpNum - i - 1; j++)
+			{
+				if (this->m_EmpArray[j].Department < this->m_EmpArray[j + 1].Department)
+				{
+					Employee temp = this->m_EmpArray[j];
+					this->m_EmpArray[j] = m_EmpArray[j + 1];
+					m_EmpArray[j + 1] = temp;
+				}
+			}
+		}
+		cout << "排序成功!" << endl;
+	}
+	system("pause");
+	system("cls");
+}
+
+//修改职工
+void WorkerManager::change_Emp()
+{
+	if (this->m_FileEmpty)
+	{
+		cout << "文件不存在或记录为空" << endl;
+	}
+	else
+	{
+		cout << "请输入工号：";
+		string id;
+		cin >> id;
+		int index = is_Exist(1, id);
+		if (index == -1)
+		{
+			cout << "该职工不存在" << endl;
+		}
+		else
+		{
+			cout << "查到职工信息：" << endl;
+			show_one(index);
+			cout << "\n\n\n";
+			cout << "即将进行修改" << endl;
+			system("pause");
+
+			Employee temp;
+			cin >> temp;
+
+			this->m_EmpArray[index] = temp;
+
+			cout << "修改成功" << endl;
+		}
+	}
+	system("pause");
+	system("cls");
+
+}
+
+//删除职工
+void WorkerManager::delete_Emp()
+{
+	if (this->m_FileEmpty)
+	{
+		cout << "文件不存在或记录为空" << endl;
+	}
+	else
+	{
+		cout << "请输入您想要删除的职工工号：";
+		string id;
+		cin >> id;
+		int index = is_Exist(1, id);
+		if (index == -1)
+		{
+			cout << "该职工不存在" << endl;
+		}
+		else
+		{
+			for (int i = index; i < this->m_EmpNum - 1; i++)
+			{
+				this->m_EmpArray[i] = this->m_EmpArray[i + 1];
+			}
+			this->m_EmpNum--;
+			this->save();
+			cout << "删除成功!" << endl;
+		}
+	}
+	system("pause");
+	system("cls");
+
+}
+//5教职工信息管理
+//基本要求：
+//定义date类，至少包括年月日；
+//定义person类，至少包括姓名、性别、身份证号码和出生日期；
+//定义职工（employee ）类，从person类派生，至少包括工号、电话、所在系部和职称（职称一般是助教，讲师，副教授，教授）。
+//功能要求：
+//1、设计菜单实现功能选择；
+//2、输入功能：输入职工信息，并保存到文件中；
+//3、查询功能：
+//1）能够根据工号精确查询职工信息；
+//2）能够根据姓名、科室查询职工信息
+//3）分系部进行职称统计，计算各职称的人数
+//4、根据职工的职称排序输出
+//5、根据工号修改职工信息
+//6、根据工号删除职工信息
+
+int main()
+{
+	WorkerManager wm;
+	int choice;
+
+	while (1)
+	{
+		//调用展示菜单函数
+		wm.show_Menu();
+		cin >> choice;
+		switch (choice)
+		{
+		case 1:
+			wm.add();
+			break;
+		case 2:
+			wm.find();
+			break;
+		case 3:
+			wm.statistics();
+			break;
+		case 4:
+			wm.sort_Emp();
+			break;
+		case 5:
+			wm.change_Emp();
+			break;
+		case 6:
+			wm.delete_Emp();
+			break;
+		case 666:
+			wm.show_Emp();
+			break;
+		default:
+			break;
+		}
+	}
+	return 0;
+}
